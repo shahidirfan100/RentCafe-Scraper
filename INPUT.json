@@ -1,0 +1,9 @@
+{
+  "startUrl": "https://www.rentcafe.com/apartments-for-rent/new-york-city-ny/",
+  "results_wanted": 20,
+  "max_pages": 1,
+  "proxyConfiguration": {
+    "useApifyProxy": true,
+    "apifyProxyGroups": ["RESIDENTIAL"]
+  }
+}

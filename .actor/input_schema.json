@@ -1,0 +1,46 @@
+{
+  "title": "RentCafe Scraper",
+  "description": "Extract listing data from RentCafe pages with automatic API-context discovery.",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "startUrl": {
+      "title": "Start URL",
+      "type": "string",
+      "description": "RentCafe listing/search URL to start from.",
+      "editor": "textfield",
+      "prefill": "https://www.rentcafe.com/apartments-for-rent/new-york-city-ny/",
+      "default": "https://www.rentcafe.com/apartments-for-rent/new-york-city-ny/"
+    },
+    "results_wanted": {
+      "title": "Maximum number of records",
+      "type": "integer",
+      "description": "Maximum number of listing records to save.",
+      "minimum": 1,
+      "default": 20,
+      "prefill": 20,
+      "editor": "number"
+    },
+    "max_pages": {
+      "title": "Maximum number of pages",
+      "type": "integer",
+      "description": "Safety cap for pagination attempts.",
+      "minimum": 1,
+      "default": 1,
+      "prefill": 1,
+      "editor": "number"
+    },
+    "proxyConfiguration": {
+      "title": "Proxy configuration",
+      "type": "object",
+      "description": "Residential proxies are strongly recommended for reliable runs.",
+      "editor": "proxy",
+      "default": {
+        "useApifyProxy": true,
+        "apifyProxyGroups": ["RESIDENTIAL"]
+      }
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+}

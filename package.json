@@ -1,0 +1,27 @@
+{
+  "name": "rentcafe-scraper",
+  "version": "1.0.0",
+  "description": "RentCafe scraper with automatic API-context discovery and production-ready output.",
+  "type": "module",
+  "dependencies": {
+    "apify": "^3.7.0",
+    "crawlee": "^3.16.0",
+    "cheerio": "^1.1.2",
+    "playwright": "1.58.2"
+  },
+  "scripts": {
+    "start": "node src/main.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "test": "echo \"Error: oops, the Actor has no tests yet, sad!\" && exit 1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.22.0",
+    "eslint-config-prettier": "^10.1.1"
+  },
+  "author": "Shahid Irfan",
+  "license": "ISC"
+}

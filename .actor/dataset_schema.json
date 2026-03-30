@@ -1,0 +1,204 @@
+{
+  "actorSpecification": 1,
+  "fields": {
+    "property_name": {
+      "title": "Property Name",
+      "type": "string",
+      "description": "Listing property name"
+    },
+    "property_id": {
+      "title": "Property ID",
+      "type": "integer",
+      "description": "RentCafe property identifier"
+    },
+    "property_code": {
+      "title": "Property Code",
+      "type": "string",
+      "description": "Property code used by listing system"
+    },
+    "full_address": {
+      "title": "Full Address",
+      "type": "string",
+      "description": "Combined address string"
+    },
+    "city": {
+      "title": "City",
+      "type": "string",
+      "description": "City"
+    },
+    "state": {
+      "title": "State",
+      "type": "string",
+      "description": "State"
+    },
+    "zip_code": {
+      "title": "Zip Code",
+      "type": "string",
+      "description": "Postal code"
+    },
+    "min_bedrooms": {
+      "title": "Minimum Bedrooms",
+      "type": "number",
+      "description": "Minimum bedroom count"
+    },
+    "max_bedrooms": {
+      "title": "Maximum Bedrooms",
+      "type": "number",
+      "description": "Maximum bedroom count"
+    },
+    "min_bathrooms": {
+      "title": "Minimum Bathrooms",
+      "type": "number",
+      "description": "Minimum bathroom count"
+    },
+    "max_bathrooms": {
+      "title": "Maximum Bathrooms",
+      "type": "number",
+      "description": "Maximum bathroom count"
+    },
+    "min_rent": {
+      "title": "Minimum Rent",
+      "type": "number",
+      "description": "Lowest advertised rent"
+    },
+    "max_rent": {
+      "title": "Maximum Rent",
+      "type": "number",
+      "description": "Highest advertised rent"
+    },
+    "min_area_sqft": {
+      "title": "Minimum Area (sqft)",
+      "type": "number",
+      "description": "Minimum listed area in square feet"
+    },
+    "max_area_sqft": {
+      "title": "Maximum Area (sqft)",
+      "type": "number",
+      "description": "Maximum listed area in square feet"
+    },
+    "available_units_count": {
+      "title": "Available Units",
+      "type": "number",
+      "description": "Available or waitlist count when provided"
+    },
+    "site_url": {
+      "title": "Site URL",
+      "type": "string",
+      "description": "Property website URL"
+    },
+    "detail_url": {
+      "title": "Detail URL",
+      "type": "string",
+      "description": "Property detail URL"
+    },
+    "image_url": {
+      "title": "Image URL",
+      "type": "string",
+      "description": "Primary listing image URL"
+    },
+    "source_page_url": {
+      "title": "Source Page URL",
+      "type": "string",
+      "description": "Page URL that yielded the record"
+    },
+    "source_api_url": {
+      "title": "Source API URL",
+      "type": "string",
+      "description": "API response URL used for extraction"
+    },
+    "scraped_at": {
+      "title": "Scraped At",
+      "type": "string",
+      "description": "ISO timestamp for extraction"
+    }
+  },
+  "views": {
+    "overview": {
+      "title": "Overview",
+      "transformation": {
+        "fields": [
+          "property_name",
+          "property_id",
+          "full_address",
+          "min_bedrooms",
+          "max_bedrooms",
+          "min_bathrooms",
+          "max_bathrooms",
+          "min_rent",
+          "max_rent",
+          "available_units_count",
+          "site_url",
+          "detail_url",
+          "image_url",
+          "source_page_url",
+          "scraped_at"
+        ]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "property_name": {
+            "label": "Property",
+            "format": "text"
+          },
+          "property_id": {
+            "label": "Property ID",
+            "format": "number"
+          },
+          "full_address": {
+            "label": "Address",
+            "format": "text"
+          },
+          "min_bedrooms": {
+            "label": "Min Beds",
+            "format": "number"
+          },
+          "max_bedrooms": {
+            "label": "Max Beds",
+            "format": "number"
+          },
+          "min_bathrooms": {
+            "label": "Min Baths",
+            "format": "number"
+          },
+          "max_bathrooms": {
+            "label": "Max Baths",
+            "format": "number"
+          },
+          "min_rent": {
+            "label": "Min Rent",
+            "format": "number"
+          },
+          "max_rent": {
+            "label": "Max Rent",
+            "format": "number"
+          },
+          "available_units_count": {
+            "label": "Units",
+            "format": "number"
+          },
+          "site_url": {
+            "label": "Site",
+            "format": "link"
+          },
+          "detail_url": {
+            "label": "Details",
+            "format": "link"
+          },
+          "image_url": {
+            "label": "Image",
+            "format": "image"
+          },
+          "source_page_url": {
+            "label": "Source Page",
+            "format": "link"
+          },
+          "scraped_at": {
+            "label": "Scraped At",
+            "format": "date"
+          }
+        }
+      }
+    }
+  }
+}
