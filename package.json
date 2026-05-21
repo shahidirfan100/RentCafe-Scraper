@@ -1,13 +1,13 @@
 {
   "name": "rentcafe-scraper",
-  "version": "1.0.0",
+  "version": "1.0",
   "description": "RentCafe scraper with automatic API-context discovery and production-ready output.",
   "type": "module",
   "dependencies": {
-    "apify": "^3.7.0",
+    "apify": "^3.7.2",
     "crawlee": "^3.16.0",
-    "cheerio": "^1.1.2",
-    "playwright": "1.58.2"
+    "cheerio": "^1.2.0",
+    "playwright": "1.59.1"
   },
   "scripts": {
     "start": "node src/main.js",

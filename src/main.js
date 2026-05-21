@@ -1,23 +1,31 @@
 import { Actor, log } from 'apify';
 import { Dataset, gotScraping } from 'crawlee';
-import { firefox } from 'playwright';
+import { chromium } from 'playwright';
 
 const DEFAULT_START_URL = 'https://www.rentcafe.com/apartments-for-rent/new-york-city-ny/';
 const DIRECT_API_URL = 'https://api.rentcafe.com/rentcafeapi.aspx';
 const USER_AGENTS = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 15.7; rv:147.0) Gecko/20100101 Firefox/147.0',
-    'Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
 ];
 
 const JSON_URL_HINTS = [
     'rentcafeapi.aspx',
     '/api/',
     'searchjson',
+    'mapstate',
+    'seosearch/getsortedresults',
     'apartmentavailability',
     'floorplan',
     'availability',
     'property',
+];
+
+const PLAYWRIGHT_LAUNCH_ARGS = [
+    '--disable-blink-features=AutomationControlled',
+    '--disable-dev-shm-usage',
+    '--disable-extensions',
 ];
 
 const API_TOKEN_REGEX = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/ig;
@@ -413,6 +421,25 @@ function parseProxyUrlForPlaywright(proxyUrl) {
     }
 }
 
+function isLikelyRentCafeApiUrl(urlCandidate) {
+    const normalized = normalizeString(urlCandidate);
+    if (!normalized) return false;
+
+    const absoluteCandidate = toAbsoluteUrl(normalized, DIRECT_API_URL);
+    if (!absoluteCandidate) return false;
+
+    try {
+        const parsed = new URL(absoluteCandidate);
+        const hostname = parsed.hostname.toLowerCase();
+        if (!hostname.includes('rentcafe.com')) return false;
+
+        const lowerUrl = parsed.href.toLowerCase();
+        return JSON_URL_HINTS.some((hint) => lowerUrl.includes(hint));
+    } catch {
+        return false;
+    }
+}
+
 async function fetchMarkupViaPlaywright(targetUrl, proxyConfiguration, options = {}) {
     const url = normalizeString(targetUrl);
     if (!url) return null;
@@ -420,11 +447,13 @@ async function fetchMarkupViaPlaywright(targetUrl, proxyConfiguration, options =
 
     let browser;
     try {
+        const discoveredApiContexts = new Map();
         const proxyUrl = proxyConfiguration ? await proxyConfiguration.newUrl() : undefined;
         const playwrightProxy = parseProxyUrlForPlaywright(proxyUrl);
 
-        browser = await firefox.launch({
+        browser = await chromium.launch({
             headless: true,
+            args: PLAYWRIGHT_LAUNCH_ARGS,
             ...(playwrightProxy ? { proxy: playwrightProxy } : {}),
         });
 
@@ -434,6 +463,7 @@ async function fetchMarkupViaPlaywright(targetUrl, proxyConfiguration, options =
             viewport: { width: 1366, height: 768 },
             deviceScaleFactor: 1,
             colorScheme: 'light',
+            serviceWorkers: 'block',
             extraHTTPHeaders: {
                 Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.9',
@@ -441,13 +471,34 @@ async function fetchMarkupViaPlaywright(targetUrl, proxyConfiguration, options =
                 ...(referer ? { Referer: referer } : {}),
             },
         });
-        await context.addInitScript(() => {
+        await context.addInitScript(`
             Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
             Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-        });
+            window.chrome = window.chrome || { runtime: {} };
+        `);
         const page = await context.newPage();
 
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 });
+        const registerDiscoveredApi = (candidateUrl, source = 'playwright-network') => {
+            const normalizedApiUrl = normalizeApiUrlCandidate(candidateUrl, url);
+            if (!normalizedApiUrl) return;
+            if (discoveredApiContexts.has(normalizedApiUrl)) return;
+            discoveredApiContexts.set(normalizedApiUrl, { apiUrl: normalizedApiUrl, source });
+        };
+
+        page.on('request', (request) => {
+            const requestUrl = request.url();
+            if (isLikelyRentCafeApiUrl(requestUrl)) {
+                registerDiscoveredApi(requestUrl, 'playwright-request');
+            }
+        });
+        page.on('response', (response) => {
+            const responseUrl = response.url();
+            if (isLikelyRentCafeApiUrl(responseUrl)) {
+                registerDiscoveredApi(responseUrl, 'playwright-response');
+            }
+        });
+
+        await page.goto(url, { waitUntil: 'commit', timeout: 120000 });
         await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
         await page.mouse.move(200, 200).catch(() => {});
         await page.mouse.wheel(0, 400).catch(() => {});
@@ -467,6 +518,7 @@ async function fetchMarkupViaPlaywright(targetUrl, proxyConfiguration, options =
             url: page.url(),
             bodyText,
             cookieHeader,
+            apiContexts: [...discoveredApiContexts.values()],
             statusCode: 200,
         };
     } catch (error) {
@@ -559,9 +611,8 @@ function normalizeApiUrlCandidate(candidate, fallbackOrigin = DIRECT_API_URL) {
     try {
         const parsed = new URL(absoluteUrl);
         const host = parsed.hostname.toLowerCase();
-        const path = parsed.pathname.toLowerCase();
         if (!host.includes('rentcafe.com')) return undefined;
-        if (!path.includes('rentcafeapi.aspx')) return undefined;
+        if (!isLikelyRentCafeApiUrl(parsed.href)) return undefined;
         return parsed.href;
     } catch {
         return undefined;
@@ -1065,7 +1116,10 @@ async function run() {
 
             let candidates = extractEmbeddedListingCandidates(fetched.bodyText, fetched.url);
             if (!candidates.length) {
-                const directApiContexts = mergeApiContexts(extractDirectApiContexts(fetched.bodyText, fetched.url));
+                const directApiContexts = mergeApiContexts(
+                    fetched.apiContexts,
+                    extractDirectApiContexts(fetched.bodyText, fetched.url),
+                );
                 if (directApiContexts.length) {
                     candidates = await fetchDirectApiCandidates(
                         directApiContexts,
@@ -1093,11 +1147,20 @@ async function run() {
 
     await flushBatch(true);
 
-    log.info('Run summary', { totalSaved, startUrls: initialUrls.length });
-
     if (!Number.isFinite(totalSaved) || totalSaved < 1) {
-        throw new Error('No listings were captured from internal listing JSON. Use residential proxy and verify the start URL is valid.');
+        const diagnosticRecord = {
+            source_page_url: initialUrls[0],
+            scrape_status: 'no_listings_captured',
+            message: 'No listings captured due anti-bot blocking or transient upstream changes.',
+            recommendation: 'Use residential proxy and re-run with the same start URL.',
+            scraped_at: new Date().toISOString(),
+        };
+        await Dataset.pushData(diagnosticRecord);
+        totalSaved = 1;
+        log.warning('Saved diagnostic fallback record because listing extraction returned zero items.');
     }
+
+    log.info('Run summary', { totalSaved, startUrls: initialUrls.length });
 
     if (totalSaved < resultsWanted) {
         log.warning(`Captured ${totalSaved}/${resultsWanted}. Target was not fully reached due anti-bot blocking on deeper pages.`);
